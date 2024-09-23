@@ -1,8 +1,51 @@
 const express = require("express");
+
+//import database of json format
 const fs = require("fs");
+
+//import database of bson format by mongodb
+const mongoose=require("mongoose");
+
+//connect with mongoDb 
+mongoose.connect('mongodb://127.0.0.1:27017/rest_api')
+.then(()=>{
+  console.loh("MongoDb connected")
+})
+.catch((error)=>{
+  console.log(error)
+});
+
+//set schema
+const userSchema=new mongoose.Schema({
+  firstName:{
+    type:String,
+    required:true 
+  },
+  lastName:{
+    type:String,
+  },
+  gender:{
+    type:String 
+  },
+  email:{
+    type:String,
+    required:true,
+    unique:true
+  },
+  jobTitle:{
+    type:String,
+    required:true,
+  }
+
+});
 
 //import user from json file
 const users = require("./MOCK_DATA (1).json");
+const { type } = require("os");
+
+//set user object 
+const User=new mongoose.Model("users")
+
 
 const app = express();
 
