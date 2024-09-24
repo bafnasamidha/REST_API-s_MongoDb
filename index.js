@@ -1,7 +1,7 @@
 const express = require("express");
 
 //import database of json format
-const fs = require("fs");
+// const fs = require("fs");
 
 //import database of bson format by mongodb
 const mongoose=require("mongoose");
@@ -9,7 +9,7 @@ const mongoose=require("mongoose");
 //connect with mongoDb 
 mongoose.connect('mongodb://127.0.0.1:27017/rest_api')
 .then(()=>{
-  console.loh("MongoDb connected")
+  console.log("MongoDb connected")
 })
 .catch((error)=>{
   console.log(error)
@@ -37,14 +37,17 @@ const userSchema=new mongoose.Schema({
     required:true,
   }
 
+},
+{
+  timestamps:true
 });
 
 //import user from json file
-const users = require("./MOCK_DATA (1).json");
-const { type } = require("os");
+// const users = require("./MOCK_DATA (1).json");
+// const { type } = require("os");
 
 //set user object 
-const User=new mongoose.Model("users")
+const User=new mongoose.model("users",userSchema);
 
 
 const app = express();
@@ -53,13 +56,14 @@ const app = express();
 app.use(express.urlencoded({ extended: false }));
 
 //--server side rendering
-app.get("/user", (req, res) => {
+app.get("/user", async(req, res) => {
+  const userDb=await User.find({});
   const html = `
     <ul>
-        ${users
+        ${userDb
           .map((user) => {
             return `<li>
-            ${user.first_name}
+            ${user.firstName}
             </li>`;
           })
           .join("")}
@@ -69,7 +73,8 @@ app.get("/user", (req, res) => {
 });
 
 //--client side rendering
-app.get("/api/user", (req, res) => {
+app.get("/api/user", async(req, res) => {
+  const users=await User.find({});
   res.send(users);
   //it directly convert the content-type as the type of content
 
@@ -80,26 +85,37 @@ app.get("/api/user", (req, res) => {
   //we can convert it to JSON format through JSON.stringfy() function
 });
 
-app.get("/api/user/:id", (req, res) => {
-  const id = req.params.id;
-  const user = users.find((user) => user.id == id);
+app.get("/api/user/:id", async(req, res) => {
+  const user=await User.findById(req.params.id);
   res.json(user);
 });
 
-app.post("/api/user", (req, res) => {
+app.post("/api/user", async(req, res) => {
   const body = req.body;
+  if(
+    !body||
+    !body.first_name||
+    !body.last_name||
+    !body.email||
+    !body.gender||
+    !body.job_title
+  ){
+    return res.status(400).json({msg:"All field are required"});
+  }
+  
+  const user=await User.create({
+    firstName:body.first_name,
+    lastName:body.last_name,
+    gender:body.gender,
+    email:body.email,
+    jobTitle:body.job_title
+  });
 
-  console.log(body);
+  return res.status(201).json(user);
 
-  users.push({ ...body, id: users.length + 1 });
-  fs.writeFile(
-    "./MOCK_DATA (1).json",
-    JSON.stringify(users),
-    (error, response) => {
-      res.end({ status: "ok" });
-    }
-  );
 });
+
+
 
 app.patch("/api/user/:id", (req, res) => {
   const updates = req.body;
